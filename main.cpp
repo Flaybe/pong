@@ -47,15 +47,19 @@ class Player{
 public:
     int x;
     int y;
+    int score = 0;
+    int height = 1;
     Player(int start_pos_x, int start_pos_y){
         x = start_pos_x;
         y = start_pos_y;
     }; 
 };
 
-
+void drawScore(int score1, int score2){
+    cout << "Player 1: " << score1 << "                  ";
+    cout << "Player 2: " << score2 << endl;
+}
 void drawBoard(Ball& ball, Player& player1, Player& player2) {
-    system("clear"); // Rensar terminalen (använd "cls" på Windows)
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {
             if (x == ball.x && y == ball.y){
@@ -97,29 +101,65 @@ set<char> readLatestKey() {
 int main() {
     setNonBlockingInput();  
     Ball ball(20, 5);
-    Player player1(2, 2);
-    Player player2(WIDTH - 2 ,2);
+    Player player1(1, 2);
+    Player player2(WIDTH - 2 ,1);
     set<char> keys;
     while(true){
+        
+        system("clear");
+        drawScore(player1.score, player2.score);
         drawBoard(ball, player1, player2);
+
         usleep(200000); // Pausa i 2 sek så du ser den
+        // Move ball
         ball.x += ball.vel_x;
         ball.y += ball.vel_y;
-        if (ball.x == player1.x && ball.y == player1.y){
+        // check if player 1 hit ball
+        if (ball.x == player1.x && (player1.y + player1.height >= ball.y && ball.y >= player1.y - player1.height)){
             ball.x -= ball.vel_x;
             ball.vel_x = ball.vel_x * (-1);
             ball.x += ball.vel_x; 
         }
+        // check if player 2 hit ball
         if (ball.x == player2.x && ball.y == player2.y){
             ball.x -= ball.vel_x;
             ball.vel_x = ball.vel_x * (-1);
             ball.x += ball.vel_x; 
         }
+        // Hit from side technology
+        if (ball.x + 1 == player1.x && ball.y == player1.y){
+            ball.x -= ball.vel_x;
+            if (ball.vel_y == 0){
+                ball.vel_y = 1;
+            }
+            ball.vel_x = ball.vel_x * (-1);
+            ball.x += ball.vel_x; 
+            ball.y += ball.vel_y;
+        }
         
-        if (ball.x == 0 || ball.x == WIDTH - 1){
+        // Hit from side technology
+        if (ball.x - 1 == player2.x && ball.y == player2.y){
+            ball.x -= ball.vel_x;
+            if (ball.vel_y == 0){
+                ball.vel_y = 1;
+            }
+            ball.vel_x = ball.vel_x * (-1);
+            ball.x += ball.vel_x; 
+            ball.y += ball.vel_y;
+        }
+        // Check if player 2 scored
+        if (ball.x == 0){
             ball.x = 20;
             ball.y = 5;
+            player2.score += 1;
         }
+        // check if player 1 scored
+        else if ( ball.x == WIDTH - 1) {
+            ball.x = 20;
+            ball.y = 5;
+            player1.score += 1;
+        }
+        // check if we hit the ceiling
         if (ball.y == 0 || ball.y == HEIGHT - 1){
             ball.y -= ball.vel_y;
             ball.vel_y = ball.vel_y * (-1);
@@ -147,6 +187,7 @@ int main() {
             }
         }
         cout << endl;
+        
     }
     resetInput();
     return 0;
