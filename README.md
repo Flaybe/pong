@@ -1,6 +1,6 @@
 # Terminal Pong 🏓
 
-A simple Pong game written in C++, played directly in the terminal — no graphics libraries, just text. The goal is to learn C++, mess around with input and logic, and have some fun.
+A simple Pong game written in C++, played directly in the terminal — no graphics libraries, just text. The goal is to mess around with input and logic, and have some fun.
 
 ## What's in the code?
 
