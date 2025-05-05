@@ -8,8 +8,12 @@
 using namespace std;
 
 const int WIDTH = 40;
-const int HEIGHT = 10;
-
+const int HEIGHT = 20;
+const char BALL = 'o';
+const char WALL = '|';
+const char FLOOR = '-';
+const char EMPTY = ' ';
+const int POINTS_TO_WIN = 3;
 
 // Gör terminalen icke-blockerande
 void setNonBlockingInput() {
@@ -45,13 +49,16 @@ class Ball{
 
 class Player{
 public:
+    int id;
     int x;
     int y;
     int score = 0;
     int height = 1;
-    Player(int start_pos_x, int start_pos_y){
+    char sprite = 'I';
+    Player(int start_pos_x, int start_pos_y, int _id){
         x = start_pos_x;
         y = start_pos_y;
+        id = _id;
     }; 
 };
 
@@ -62,23 +69,30 @@ void drawScore(int score1, int score2){
 void drawBoard(Ball& ball, Player& player1, Player& player2) {
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {
+            if (x == 0 || x == WIDTH - 1) {
+                cout << WALL;
+                continue;
+            }
+            // Roof and Floor
+            if (y == 0 || y == HEIGHT - 1) {
+                cout << FLOOR; 
+                continue;
+            }
+ 
+            if (x == player1.x && (player1.height + player1.y == y ||player1.y - player1.height  == y || player1.y == y)){
+                cout << player1.sprite;
+                continue;
+            }
+            if (x == player2.x && (player2.height + player2.y == y ||player2.y - player2.height  == y || player2.y == y)){
+                cout << player2.sprite;
+                continue;
+            }
             if (x == ball.x && y == ball.y){
-                cout << "o";
-            }               	    	
-            else if ((x == player1.x && y == player1.y) || (x == player2.x && y == player2.y)) {
-                cout << "I";
+                cout << BALL;
+                continue;
             }
-            else if (x == 0 || x == WIDTH - 1) {
-                cout << "|";
-            }
-            // Toppen och botten
-            else if (y == 0 || y == HEIGHT - 1) {
-                cout << "-";
-            }
-            // Tom yta
-            else {
-                cout << " ";
-            }
+           // Empty
+            cout << EMPTY;
         }
         cout << endl;
     }
@@ -97,66 +111,44 @@ set<char> readLatestKey() {
     return keypresses;
 }
 
-
-int main() {
-    setNonBlockingInput();  
-    Ball ball(20, 5);
-    Player player1(1, 2);
-    Player player2(WIDTH - 2 ,1);
-    set<char> keys;
-    while(true){
-        
-        system("clear");
-        drawScore(player1.score, player2.score);
-        drawBoard(ball, player1, player2);
-
-        usleep(200000); // Pausa i 2 sek så du ser den
-        // Move ball
-        ball.x += ball.vel_x;
-        ball.y += ball.vel_y;
-        // check if player 1 hit ball
-        if (ball.x == player1.x && (player1.y + player1.height >= ball.y && ball.y >= player1.y - player1.height)){
-            ball.x -= ball.vel_x;
-            ball.vel_x = ball.vel_x * (-1);
-            ball.x += ball.vel_x; 
+void checkPlayerCollision(Player& player, Ball& ball){
+        int side = 0; 
+        if (player.id == 1){
+            side = -1; 
+        }else{
+            side = 1;
         }
-        // check if player 2 hit ball
-        if (ball.x == player2.x && ball.y == player2.y){
-            ball.x -= ball.vel_x;
-            ball.vel_x = ball.vel_x * (-1);
-            ball.x += ball.vel_x; 
-        }
-        // Hit from side technology
-        if (ball.x + 1 == player1.x && ball.y == player1.y){
-            ball.x -= ball.vel_x;
-            if (ball.vel_y == 0){
+        if (ball.x + side == player.x){
+            if (player.y + player.height == ball.y){
+                ball.vel_x = ball.vel_x * (-1);
                 ball.vel_y = 1;
+            }else if (ball.y == player.y - player.height) {
+                ball.vel_x = ball.vel_x * (-1);
+                ball.vel_y = -1; 
+            }else if (player.y == ball.y) {
+                ball.vel_x *= -1;
+                ball.vel_y = 0;
             }
-            ball.vel_x = ball.vel_x * (-1);
-            ball.x += ball.vel_x; 
-            ball.y += ball.vel_y;
+             
         }
-        
-        // Hit from side technology
-        if (ball.x - 1 == player2.x && ball.y == player2.y){
-            ball.x -= ball.vel_x;
-            if (ball.vel_y == 0){
-                ball.vel_y = 1;
-            }
-            ball.vel_x = ball.vel_x * (-1);
-            ball.x += ball.vel_x; 
-            ball.y += ball.vel_y;
-        }
-        // Check if player 2 scored
+
+}
+
+void checkBallCollision(Ball& ball, Player& player1, Player& player2){
         if (ball.x == 0){
-            ball.x = 20;
-            ball.y = 5;
+            ball.x = player2.x - 2;
+            ball.y = player2.y;
+            ball.vel_y = 0;
+            ball.vel_x *= -1;
             player2.score += 1;
         }
         // check if player 1 scored
         else if ( ball.x == WIDTH - 1) {
-            ball.x = 20;
-            ball.y = 5;
+            
+            ball.x = player1.x + 2;
+            ball.y = player1.y;
+            ball.vel_y = 0;
+            ball.vel_x *= -1;
             player1.score += 1;
         }
         // check if we hit the ceiling
@@ -166,8 +158,37 @@ int main() {
             ball.y += ball.vel_y;
 
         }
-        
-        keys = readLatestKey();
+ 
+}
+
+bool checkWin(Player& player){
+    if (player.score == POINTS_TO_WIN){
+        return true;
+    }
+    return false;
+}
+int main() {
+    setNonBlockingInput();  
+    Ball ball(20, 5);
+    Player player1(1, 2, 1);
+    Player player2(WIDTH - 2 ,1, 2);
+    set<char> keys;
+    while(true){
+        if (checkWin(player1)){
+            drawScore(player1.score, player2.score);
+            cout << "PLAYER 1 WINS!" << endl;
+            break;
+        } 
+        if (checkWin(player2)){
+            drawScore(player1.score, player2.score);
+            cout << "PLAYER 2 WINS!" << endl;
+            break;
+        }
+        system("clear");
+        drawScore(player1.score, player2.score);
+        drawBoard(ball, player1, player2);
+
+        usleep(100000); // Pausa i 2 sek så du ser den
         for (char key : keys){
             cout << key;
             if (key == 'q' || key == 'Q'){
@@ -187,7 +208,18 @@ int main() {
             }
         }
         cout << endl;
+
+        // Move ball
+        ball.x += ball.vel_x;
+        ball.y += ball.vel_y;
+        // check if player 1 hit ball
+        checkPlayerCollision(player1, ball);
+        // check if player 2 hit ball
+        checkPlayerCollision(player2, ball);
         
+        checkBallCollision(ball, player1, player2);
+        keys = readLatestKey();
+               
     }
     resetInput();
     return 0;
