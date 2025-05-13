@@ -129,7 +129,6 @@ void checkPlayerCollision(Player& player, Ball& ball){
                 ball.vel_x *= -1;
                 ball.vel_y = 0;
             }
-             
         }
 
 }
@@ -216,10 +215,8 @@ int main() {
         checkPlayerCollision(player1, ball);
         // check if player 2 hit ball
         checkPlayerCollision(player2, ball);
-        
         checkBallCollision(ball, player1, player2);
         keys = readLatestKey();
-               
     }
     resetInput();
     return 0;
